@@ -7,6 +7,8 @@ pub enum SharedWorkerError {
     Generic(String),
     #[error("InvalidArguments: {0}")]
     InvalidArguments(String),
+    #[error("serde_wasm_bindgen: {0}")]
+    SerdeWasmBindgen(#[from] serde_wasm_bindgen::Error),
 }
 
 impl From<SharedWorkerError> for JsValue {

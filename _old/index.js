@@ -1,4 +1,4 @@
-const worker = new SharedWorker('shared_worker.js');
+const worker = new SharedWorker('shared_worker.js', { name: "huggingface-xet-shared-worker"});
 
 worker.port.start();
 
@@ -11,7 +11,6 @@ document.getElementById('btn').addEventListener('click', function () {
     console.log(`1 sending: ${text}`)
     worker.port.postMessage({content: text});
 });
-
 
 
 document.getElementById('customBtn').addEventListener('click', function () {
