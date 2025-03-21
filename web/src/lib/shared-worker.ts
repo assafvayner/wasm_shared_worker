@@ -1,10 +1,9 @@
-import init, { upload_async, download_async } from "../../../xet_wasm/pkg/xet_wasm.js";
-
-type WorkerOperation = "upload" | "download";
-type WorkerStatus = "success" | "error";
+import { default as initWasm } from "../../../xet_wasm/pkg/xet_wasm.js";
+import { upload_async, download_async } from "../../../xet_wasm/pkg/xet_wasm.js";
 
 interface WorkerMessage {
-	type: WorkerOperation;
+	type:  "upload" | "download";
+	files: string[];
 }
 
 // interface UploadMessage extends WorkerMessage {
@@ -19,16 +18,19 @@ interface WorkerMessage {
 // }
 
 interface WorkerResponse {
-	status:  WorkerStatus;
+	type:    "success" | "error";
 	message: string;
+	data?:   { files: string[] };
 }
 
 let wasmInitialized = false;
 
 async function initializeWasm() {
-	navigator.locks.request("_wasm_init", async () => {
+	if (wasmInitialized) return;
+
+	await navigator.locks.request("wasm_init", async () => {
 		if (wasmInitialized) return;
-		await init();
+		await initWasm();
 		wasmInitialized = true;
 	});
 }
@@ -36,13 +38,13 @@ async function initializeWasm() {
 async function handleUpload(files: string[]): Promise<void> {
 	await initializeWasm();
 	console.log("Handling upload for files:", files);
-	await upload_async(files);
+	await upload_async(files, [], "url", "token");
 }
 
 async function handleDownload(files: string[]): Promise<void> {
 	await initializeWasm();
 	console.log("Handling download for files:", files);
-	await download_async(files);
+	await download_async("repo", "file", new Blob(), "url", "token");
 }
 
 self.onconnect = function (e: MessageEvent): void {
