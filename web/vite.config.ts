@@ -18,6 +18,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@shared-worker": resolve(__dirname, "src/lib/shared-worker.ts"),
+			"@xet":           resolve(__dirname, "../xet_wasm/pkg"),
 		},
 	},
 	worker: {

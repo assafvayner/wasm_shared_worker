@@ -14,17 +14,20 @@
 	}
 
 	function handleApprove() {
-		const filePaths = selectedFiles.map(file => file.name);
 		sendMessageToWorker({
-			type:  "upload",
-			files: filePaths,
+			operation: "upload",
+			files:     selectedFiles,
+			url:       "https://blah.com",
+			token:     "1234567890",
 		});
 	}
 
 	function handleDownload() {
 		sendMessageToWorker({
-			type:  "download",
-			files: fileList,
+			operation: "download",
+			files:     fileList,
+			url:       "https://blah.com",
+			token:     "1234567890",
 		});
 	}
 
@@ -33,7 +36,7 @@
 			const response = event.data;
 			console.log("Received message from worker:", response);
 
-			if (response.type === "success") {
+			if (response.status === "success") {
 				workerStatus = `Success: ${response.message}`;
 			} else {
 				workerStatus = `Error: ${response.message}`;

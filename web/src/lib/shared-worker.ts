@@ -1,84 +1,58 @@
-import { default as initWasm } from "../../../xet_wasm/pkg/xet_wasm.js";
-import { upload_async, download_async } from "../../../xet_wasm/pkg/xet_wasm.js";
-
-interface WorkerMessage {
-	type:  "upload" | "download";
-	files: string[];
-}
-
-// interface UploadMessage extends WorkerMessage {
-// 	files:      File[];
-// 	file_paths: string[];
-// 	url:        string;
-// 	token:      string;
-// }
-
-// interface DownloadMessage extends WorkerMessage {
-// 	files: string[];
-// }
-
-interface WorkerResponse {
-	type:    "success" | "error";
-	message: string;
-	data?:   { files: string[] };
-}
+import { default as initWasm } from "@xet/xet_wasm.js";
+import { upload_async, download_async } from "@xet/xet_wasm.js";
+import type { WorkerMessage, WorkerResponse } from "./types";
 
 let wasmInitialized = false;
 
-async function initializeWasm() {
+async function verifyInitializeWasm() {
 	if (wasmInitialized) return;
 
-	await navigator.locks.request("wasm_init", async () => {
+	await navigator.locks.request("_hf_xet_worker_wasm_init", async () => {
 		if (wasmInitialized) return;
 		await initWasm();
 		wasmInitialized = true;
 	});
 }
 
-async function handleUpload(files: string[]): Promise<void> {
-	await initializeWasm();
-	console.log("Handling upload for files:", files);
-	await upload_async(files, [], "url", "token");
-}
-
-async function handleDownload(files: string[]): Promise<void> {
-	await initializeWasm();
-	console.log("Handling download for files:", files);
-	await download_async("repo", "file", new Blob(), "url", "token");
-}
-
 self.onconnect = function (e: MessageEvent): void {
 	const port = e.ports[0];
+	console.log("Worker connected" + e.ports);
 
 	port.onmessage = async function (e: MessageEvent<WorkerMessage>): Promise<void> {
 		const data = e.data;
 		console.log("Received message in worker:", data);
 
 		try {
+			await verifyInitializeWasm();
 			// Handle different message types
-			switch (data.type) {
-				case "upload":
-					await handleUpload(data.files);
+			switch (data.operation) {
+				case "upload": {
+					const output = await upload_async(data.files, data.url, data.token);
 					port.postMessage({
-						type:    "success",
-						message: "Upload request received",
-						data:    { files: data.files },
+						status:  "success",
+						message: "Upload request succeeded",
+						output,
 					} as WorkerResponse);
 					break;
-				case "download":
-					await handleDownload(data.files);
+				}
+				case "download": {
+					const output = await download_async("repo", "file", new Blob(), "url", "token");
 					port.postMessage({
-						type:    "success",
-						message: "Download request received",
-						data:    { files: data.files },
+						status:  "success",
+						message: "Download request succeeded",
+						output,
 					} as WorkerResponse);
 					break;
+				}
 				default:
-					throw new Error(`Unknown message type: ${data.type}`);
+					port.postMessage({
+						status:  "error",
+						message: "Unknown message type",
+					} as WorkerResponse);
 			}
 		} catch (error) {
 			port.postMessage({
-				type:    "error",
+				status:  "error",
 				message: error instanceof Error ? error.message : "Unknown error occurred",
 			} as WorkerResponse);
 		}

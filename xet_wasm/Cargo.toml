@@ -13,6 +13,9 @@ thiserror = "2.0.12"
 wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4.50"
 merklehash = { git = "https://github.com/huggingface/xet-core.git" }
+wasm-bindgen-file-reader = "1.0.0"
+hex = "0.4.3"
+sha2 = "0.10.8"
 
 [dependencies.web-sys]
 version = "0.3.77"
@@ -25,4 +28,6 @@ features = [
   "File",
   "Blob",
   "console",
+  "ReadableStream",
+  "WritableStream",
 ]

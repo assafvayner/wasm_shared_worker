@@ -1,13 +1,4 @@
-interface WorkerMessage {
-	type:  "upload" | "download";
-	files: string[];
-}
-
-interface WorkerResponse {
-	type:    "success" | "error";
-	message: string;
-	data?:   { files: string[] };
-}
+import type { WorkerMessage, WorkerResponse } from "./types";
 
 let worker: SharedWorker | null = null;
 
