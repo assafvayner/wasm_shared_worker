@@ -3,17 +3,6 @@
 import * as xet from "@huggingface/xet";
 import type { WorkerMessage, WorkerResponse } from "./types";
 
-// let wasmInitialized = false;
-
-async function verifyInitializeWasm() {
-	// if (wasmInitialized) return;
-	// await navigator.locks.request("_hf_xet_worker_wasm_init", async () => {
-	// 	if (wasmInitialized) return;
-	// 	await initWasm();
-	// 	wasmInitialized = true;
-	// });
-}
-
 self.onconnect = function (e: MessageEvent): void {
 	const port = e.ports[0];
 	console.log("Worker connected" + e.ports);
@@ -23,7 +12,6 @@ self.onconnect = function (e: MessageEvent): void {
 		console.log("Received message in worker:", data);
 
 		try {
-			await verifyInitializeWasm();
 			// if (self.current_upload) {
 			// 	self.current_upload.cancel();
 			// }

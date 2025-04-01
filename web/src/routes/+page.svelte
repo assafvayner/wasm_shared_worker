@@ -12,7 +12,7 @@
 	function handleFileSelect(event: Event) {
 		const input = event.target as HTMLInputElement;
 		if (input.files) {
-			selectedFiles = input.files;
+			selectedFiles = [...input.files];
 		}
 	}
 
@@ -27,6 +27,7 @@
 	}
 
 	function handleDownload() {
+		// not working on download anymore.s
 		if (!worker) return;
 		const blob = new Blob([], { type: "application/octet-stream" });
 		sendMessageToWorker(worker, {
