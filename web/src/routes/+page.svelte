@@ -1,20 +1,24 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { sendMessageToWorker, setupWorkerMessageHandler } from "$lib/worker";
+	import { sendMessageToWorker, getWorker } from "$lib/worker";
+	import type { WorkerResponse } from "$lib/types";
 
-	let selectedFiles: File[] = [];
+	let selectedFiles = $state<File[]>([]);
 	let fileList: string[] = ["file1", "file2", "file3"];
-	let workerStatus: string = "";
+	let workerStatus: string = $state("");
+	let selectedFileToDownload = $state(fileList[0]); // Default to first file
+	let worker = $state<SharedWorker | null>(null);
 
 	function handleFileSelect(event: Event) {
 		const input = event.target as HTMLInputElement;
 		if (input.files) {
-			selectedFiles = Array.from(input.files);
+			selectedFiles = input.files;
 		}
 	}
 
 	function handleApprove() {
-		sendMessageToWorker({
+		if (!worker) return;
+		sendMessageToWorker(worker, {
 			operation: "upload",
 			files:     selectedFiles,
 			url:       "https://blah.com",
@@ -23,25 +27,34 @@
 	}
 
 	function handleDownload() {
-		sendMessageToWorker({
+		if (!worker) return;
+		const blob = new Blob([], { type: "application/octet-stream" });
+		sendMessageToWorker(worker, {
 			operation: "download",
-			files:     fileList,
+			file_name: selectedFileToDownload,
+			writer:    blob,
 			url:       "https://blah.com",
 			token:     "1234567890",
 		});
 	}
 
 	onMount(() => {
-		setupWorkerMessageHandler(event => {
+		worker = getWorker();
+
+		// Define the message handler
+		const messageHandler = (event: MessageEvent<WorkerResponse>) => {
 			const response = event.data;
 			console.log("Received message from worker:", response);
+		};
 
-			if (response.status === "success") {
-				workerStatus = `Success: ${response.message}`;
-			} else {
-				workerStatus = `Error: ${response.message}`;
-			}
-		});
+		// Set up the message handler
+		worker.port.onmessage = messageHandler;
+		worker.port.start();
+
+		// Cleanup function
+		return () => {
+			worker!.port.onmessage = null;
+		};
 	});
 </script>
 
@@ -57,7 +70,7 @@
 	<section class="upload-section">
 		<h2>Upload Files</h2>
 		<div class="file-input-container">
-			<input type="file" multiple on:change={handleFileSelect} class="file-input" id="file-input" />
+			<input type="file" multiple onchange={handleFileSelect} class="file-input" id="file-input" />
 			<label for="file-input" class="button">Upload Files</label>
 		</div>
 
@@ -69,7 +82,7 @@
 						<li>{file.name}</li>
 					{/each}
 				</ul>
-				<button on:click={handleApprove} class="button approve">Approve</button>
+				<button onclick={handleApprove} class="button approve">Approve</button>
 			</div>
 		{/if}
 	</section>
@@ -78,12 +91,14 @@
 		<h2>Download Files</h2>
 		<div class="file-list">
 			<h3>Available Files:</h3>
-			<ul>
-				{#each fileList as file}
-					<li>{file}</li>
-				{/each}
-			</ul>
-			<button on:click={handleDownload} class="button">Download</button>
+			<div class="file-picker">
+				<select bind:value={selectedFileToDownload}>
+					{#each fileList as file}
+						<option value={file}>{file}</option>
+					{/each}
+				</select>
+				<button onclick={handleDownload} class="button">Download</button>
+			</div>
 		</div>
 	</section>
 </main>
@@ -168,5 +183,20 @@
 		background-color: #f2dede;
 		color: #a94442;
 		border: 1px solid #ebccd1;
+	}
+
+	.file-picker {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+		margin-top: 1rem;
+	}
+
+	select {
+		padding: 0.5rem;
+		border-radius: 4px;
+		border: 1px solid #ccc;
+		font-size: 1rem;
+		min-width: 200px;
 	}
 </style>

@@ -30,4 +30,6 @@ features = [
   "console",
   "ReadableStream",
   "WritableStream",
+  "ReadableStreamDefaultController",
+  "ReadableStreamDefaultReader",
 ]

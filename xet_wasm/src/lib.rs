@@ -11,14 +11,42 @@ use merklehash::MerkleHash;
 use std::io::{Seek, SeekFrom};
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering::SeqCst;
-use wasm_bindgen::prelude::*;
-use web_sys::{console, Blob, File};
+use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsObject};
+use web_sys::js_sys::{Function, Reflect, Uint8Array};
+use web_sys::{console, Blob, File, ReadableStream, ReadableStreamDefaultController};
 
 static CALL_COUNT: AtomicU32 = AtomicU32::new(0);
 
 fn log<T: ToString>(message: T) {
     console::log_1(&JsValue::from_str(&message.to_string()));
 }
+
+extern "C" {
+    #[wasm_bindgen]
+    struct TokenRefresher;
+
+    #[wasm_bindgen]
+    async fn refresh_token(this: &TokenRefresher) -> Result<String, JsValue>;
+}
+
+///
+/// class TokenRefresher {
+///     constructor(url: string, token: string) {
+///         this.url = url;
+///         this.token = token;
+///     }
+///     
+///     async function refresh_token() {
+///         const response = await fetch(this.url, {
+///             method: 'POST',
+///             body: JSON.stringify({ token: this.token }),
+///         });
+///         const data = await response.json();
+///         return data.token;
+///     }
+/// }
+/// 
 
 #[wasm_bindgen]
 pub async fn upload_async(
@@ -38,10 +66,6 @@ pub async fn _upload_async(
 ) -> Result<Vec<PointerFile>, SharedWorkerError> {
     let value = CALL_COUNT.fetch_add(1, SeqCst);
     log(format!("call count value = {value}"));
-
-    // log(format!("files = {files:?}"));
-    log(format!("url = {url:?}"));
-    log(format!("token = {token:?}"));
 
     let files_it = files.into_iter().map(|file| {
         let path = file.name().to_string();
@@ -93,7 +117,7 @@ pub async fn download_async(
     serde_wasm_bindgen::to_value(&output).map_err(JsValue::from)
 }
 
-pub async fn _download_async(
+async fn _download_async(
     _repo: String,
     _file: String,
     _writer: Blob,
@@ -101,4 +125,69 @@ pub async fn _download_async(
     _token: String,
 ) -> Result<(), SharedWorkerError> {
     Ok(())
+}
+
+#[wasm_bindgen]
+struct MyReadableStream;
+
+#[wasm_bindgen]
+impl MyReadableStream {}
+
+#[wasm_bindgen]
+pub struct ByteProducer {
+    offset: usize,
+    total: usize,
+}
+
+#[wasm_bindgen]
+impl ByteProducer {
+    #[wasm_bindgen(constructor)]
+    pub fn new(total: usize) -> ByteProducer {
+        ByteProducer { offset: 0, total }
+    }
+
+    #[wasm_bindgen]
+    pub fn into_stream(self) -> Result<ReadableStream, JsValue> {
+        let producer = std::rc::Rc::new(std::cell::RefCell::new(self));
+
+        let pull_producer = producer.clone();
+        let pull_closure = Closure::wrap(Box::new(
+            move |controller: ReadableStreamDefaultController| {
+                let mut prod = pull_producer.borrow_mut();
+
+                // Simulate generating 8 bytes per pull
+                let chunk_size = 8;
+                let remaining = prod.total - prod.offset;
+                let size = chunk_size.min(remaining);
+
+                let mut chunk = vec![0u8; size];
+                for i in 0..size {
+                    chunk[i] = (prod.offset + i) as u8; // Example: Fill with offset values
+                }
+
+                prod.offset += size;
+
+                let array = Uint8Array::from(&chunk[..]);
+                controller.enqueue_with_chunk(&array).unwrap();
+
+                if prod.offset >= prod.total {
+                    controller.close().unwrap();
+                }
+            },
+        ) as Box<dyn FnMut(_)>);
+
+        let underlying_source = JsValue::from_str("hopeful");
+
+        Reflect::set(
+            &underlying_source,
+            &JsValue::from_str("pull"),
+            pull_closure.as_ref().unchecked_ref(),
+        )?;
+
+        pull_closure.forget(); // Prevents dropping the closure prematurely
+
+        let stream = ReadableStream::new_with_underlying_source(&underlying_source)?;
+
+        Ok(stream)
+    }
 }

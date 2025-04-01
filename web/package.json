@@ -13,9 +13,17 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "npm run test:unit -- --run",
+		"webpack:dev": "webpack serve --config webpack.config.js",
+		"webpack:build": "webpack --config webpack.config.js --mode production"
+	},
+	"dependencies": {
+		"@huggingface/xet": "file:../../xet-core/hf_xet_js"
 	},
 	"devDependencies": {
+		"@babel/core": "^7.24.0",
+		"@babel/preset-env": "^7.24.0",
+		"@babel/preset-typescript": "^7.27.0",
 		"@eslint/compat": "^1.2.5",
 		"@eslint/js": "^9.18.0",
 		"@huggingface/prettier-plugin-vertical-align": "^0.2.3",
@@ -24,21 +32,30 @@
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@testing-library/jest-dom": "^6.6.3",
 		"@testing-library/svelte": "^5.2.4",
+		"babel-loader": "^9.1.3",
+		"css-loader": "^6.10.0",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
 		"globals": "^16.0.0",
+		"html-webpack-plugin": "^5.6.3",
 		"jsdom": "^26.0.0",
 		"prettier": "^3.5.3",
 		"prettier-plugin-svelte": "^3.3.3",
 		"prettier-plugin-tailwindcss": "^0.6.11",
+		"style-loader": "^3.3.4",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
+		"svelte-loader": "^3.0.0",
 		"typescript": "^5.0.0",
 		"typescript-eslint": "^8.20.0",
 		"vite": "^6.0.0",
 		"vite-plugin-top-level-await": "^1.5.0",
 		"vite-plugin-wasm": "^3.4.1",
-		"vitest": "^3.0.0"
-	}
+		"vitest": "^3.0.0",
+		"webpack": "^5.90.3",
+		"webpack-cli": "^5.1.4",
+		"webpack-dev-server": "^5.0.2"
+	},
+	"packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0"
 }

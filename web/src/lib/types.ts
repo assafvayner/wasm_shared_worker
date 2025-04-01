@@ -1,14 +1,27 @@
-import * as XetWasm from "@xet/xet_wasm.d.ts";
-export { XetWasm };
-
 export type WorkerOperation = "upload" | "download";
 export type WorkerStatus = "success" | "error";
 
-export interface WorkerMessage extends Record<string, unknown> {
+export interface BaseWorkerMessage {
 	operation: WorkerOperation;
+	url:       string;
+	token:     string;
 }
+
+export interface UploadWorkerMessage extends BaseWorkerMessage {
+	operation: "upload";
+	files:     File[];
+}
+
+export interface DownloadWorkerMessage extends BaseWorkerMessage {
+	operation: "download";
+	file_name: string;
+	writer:    Blob;
+}
+
+export type WorkerMessage = UploadWorkerMessage | DownloadWorkerMessage;
 
 export interface WorkerResponse {
 	status:  WorkerStatus;
 	message: string;
+	output?: unknown;
 }
