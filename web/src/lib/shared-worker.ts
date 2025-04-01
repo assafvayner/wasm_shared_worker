@@ -12,14 +12,10 @@ self.onconnect = function (e: MessageEvent): void {
 		console.log("Received message in worker:", data);
 
 		try {
-			// if (self.current_upload) {
-			// 	self.current_upload.cancel();
-			// }
 			// Handle different message types
 			switch (data.operation) {
 				case "upload": {
 					const output = await xet.upload_xet_files("model", "assaf/blah", data.files);
-					// const output = await upload_async(data.files, data.url, data.token);
 					port.postMessage({
 						status:  "success",
 						message: "Upload request succeeded",
@@ -28,14 +24,8 @@ self.onconnect = function (e: MessageEvent): void {
 					break;
 				}
 				case "download": {
+					// not working on download anymore.
 					break;
-					// const output = await download_async("repo", data.file_name, data.writer, data.url, data.token);
-					// port.postMessage({
-					// 	status:  "success",
-					// 	message: "Download request succeeded",
-					// 	output,
-					// } as WorkerResponse);
-					// break;
 				}
 				default:
 					port.postMessage({
